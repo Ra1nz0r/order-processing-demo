@@ -1,0 +1,43 @@
+---
+version: "3"
+
+tasks:
+  run: # название задачи для запуска
+    desc: "Runs 'main.go' file."
+    cmds:
+      - go run ./cmd/api-service
+
+  test: # название задачи для запуска
+    desc: "Runs all test files without cache and with info."
+    cmds:
+      - go test -v ./... -count=1
+
+  migrate_up: # название задачи для запуска
+    desc: "Runs the migration file upwards."
+    cmds:
+      - migrate -path db/migration -database "postgresql://postgres:admin@localhost:5432/postgres?sslmode=disable" -verbose up
+
+  migrate_down: # название задачи для запуска
+    desc: "Runs the migration file down."
+    cmds:
+      - migrate -path db/migration -database "postgresql://postgres:admin@localhost:5432/postgres?sslmode=disable" -verbose down
+
+  swag: # название задачи для запуска
+    desc: "Initializes the creation of Swagger documentation."
+    cmds:
+      - swag init -q -g ./cmd/app/main.go
+
+  sqlc_gen: # название задачи для запуска
+    desc: "Generates creation of SQLC files."
+    cmds:
+      - sqlc generate
+
+  d_compose: # название задачи для запуска
+    desc: "Run docker compose."
+    cmds:
+      - docker-compose up --build
+
+  g_lint: # название задачи для запуска
+    desc: "Run golangci-lint."
+    cmds:
+      - golangci-lint run

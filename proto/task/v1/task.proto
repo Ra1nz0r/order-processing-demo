@@ -1,0 +1,29 @@
+syntax = "proto3";
+
+package task.v1;
+
+option go_package = "github.com/Ra1nz0r/order-processing-demo/proto/task/v1;taskv1";
+
+service TaskService {
+  rpc CreateTask(CreateTaskRequest) returns (CreateTaskResponse);
+  rpc GetTaskStatus(GetTaskStatusRequest) returns (GetTaskStatusResponse);
+}
+
+message CreateTaskRequest {
+  string title = 1;
+  string payload = 2;
+}
+
+message CreateTaskResponse {
+  string task_id = 1;
+  string status = 2;
+}
+
+message GetTaskStatusRequest {
+  string task_id = 1;
+}
+
+message GetTaskStatusResponse {
+  string task_id = 1;
+  string status = 2;
+}
