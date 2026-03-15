@@ -2,10 +2,11 @@ package task
 
 import (
 	"context"
-	"sync"
+	"fmt"
 
 	taskv1 "github.com/Ra1nz0r/order-processing-demo/proto/task/v1"
 	"github.com/google/uuid"
+	"github.com/redis/go-redis/v9"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -13,13 +14,12 @@ import (
 type Service struct {
 	taskv1.UnimplementedTaskServiceServer
 
-	mu     sync.RWMutex
-	status map[string]string
+	rdb *redis.Client
 }
 
-func NewService() *Service {
+func NewService(rdb *redis.Client) *Service {
 	return &Service{
-		status: make(map[string]string),
+		rdb: rdb,
 	}
 }
 
@@ -30,9 +30,10 @@ func (s *Service) CreateTask(ctx context.Context, req *taskv1.CreateTaskRequest)
 
 	taskID := uuid.NewString()
 
-	s.mu.Lock()
-	s.status[taskID] = "created"
-	s.mu.Unlock()
+	key := taskStatusKey(taskID)
+	if err := s.rdb.Set(ctx, key, "created", 0).Err(); err != nil {
+		return nil, status.Error(codes.Internal, "failed to save task status")
+	}
 
 	return &taskv1.CreateTaskResponse{
 		TaskId: taskID,
@@ -45,16 +46,22 @@ func (s *Service) GetTaskStatus(ctx context.Context, req *taskv1.GetTaskStatusRe
 		return nil, status.Error(codes.InvalidArgument, "task_id is required")
 	}
 
-	s.mu.RLock()
-	taskStatus, ok := s.status[req.GetTaskId()]
-	s.mu.RUnlock()
+	key := taskStatusKey(req.GetTaskId())
 
-	if !ok {
-		return nil, status.Error(codes.NotFound, "task not found")
+	taskStatus, err := s.rdb.Get(ctx, key).Result()
+	if err != nil {
+		if err == redis.Nil {
+			return nil, status.Error(codes.NotFound, "task not found")
+		}
+		return nil, status.Error(codes.Internal, "failed to get task status")
 	}
 
 	return &taskv1.GetTaskStatusResponse{
 		TaskId: req.GetTaskId(),
 		Status: taskStatus,
 	}, nil
+}
+
+func taskStatusKey(taskID string) string {
+	return fmt.Sprintf("task:%s:status", taskID)
 }
