@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"log"
+	"os"
 	"os/signal"
 	"syscall"
 	"time"
@@ -15,14 +16,12 @@ import (
 	kgo "github.com/segmentio/kafka-go"
 )
 
-const (
-	redisAddr   = "localhost:6379"
-	kafkaBroker = "localhost:9092"
-	kafkaTopic  = "tasks.created"
-	consumerGrp = "task-worker-group"
-)
-
 func main() {
+	redisAddr := getEnv("REDIS_ADDR", "localhost:6379")
+	kafkaBroker := getEnv("KAFKA_BROKER", "localhost:9092")
+	kafkaTopic := getEnv("KAFKA_TOPIC", "tasks.created")
+	consumerGrp := getEnv("KAFKA_GROUP_ID", "task-worker-local")
+
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
@@ -51,6 +50,7 @@ func main() {
 	}()
 
 	log.Println("worker-service started")
+	log.Printf("redis: %s", redisAddr)
 	log.Printf("kafka broker: %s, topic: %s, group: %s", kafkaBroker, kafkaTopic, consumerGrp)
 
 	for {
@@ -93,4 +93,12 @@ func main() {
 func setTaskStatus(ctx context.Context, rdb *redis.Client, taskID, status string) error {
 	key := "task:" + taskID + ":status"
 	return rdb.Set(ctx, key, status, 0).Err()
+}
+
+func getEnv(key, fallback string) string {
+	val := os.Getenv(key)
+	if val == "" {
+		return fallback
+	}
+	return val
 }

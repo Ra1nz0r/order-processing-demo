@@ -1,0 +1,17 @@
+.git
+
+.idea
+.vscode
+
+bin/
+dist/
+tmp/
+coverage/
+
+*.log
+*.pid
+*.test
+coverage.out
+
+.env
+.env.*

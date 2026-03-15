@@ -1,0 +1,29 @@
+# Binaries
+bin/
+dist/
+
+# Temporary files
+tmp/
+*.log
+*.pid
+*.out
+*.test
+
+# Coverage
+coverage.out
+coverage/
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# IDE / Editor
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db

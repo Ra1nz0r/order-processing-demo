@@ -13,12 +13,46 @@ services:
     environment:
       KAFKA_NODE_ID: 1
       KAFKA_PROCESS_ROLES: broker,controller
-      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+
+      KAFKA_LISTENERS: CONTROLLER://localhost:9091,HOST://0.0.0.0:9092,DOCKER://0.0.0.0:9093
+      KAFKA_ADVERTISED_LISTENERS: HOST://localhost:9092,DOCKER://kafka:9093
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,DOCKER:PLAINTEXT,HOST:PLAINTEXT
+
       KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
-      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@localhost:9093
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@localhost:9091
+      KAFKA_INTER_BROKER_LISTENER_NAME: DOCKER
+
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+
+  api-service:
+    build:
+      context: .
+      dockerfile: ./cmd/api-service/Dockerfile
+    container_name: order-demo-api-service
+    ports:
+      - "50051:50051"
+    environment:
+      REDIS_ADDR: redis:6379
+      KAFKA_BROKER: kafka:9093
+      KAFKA_TOPIC: tasks.created
+      GRPC_PORT: 50051
+    depends_on:
+      - redis
+      - kafka
+
+  worker-service:
+    build:
+      context: .
+      dockerfile: ./cmd/worker-service/Dockerfile
+    container_name: order-demo-worker-service
+    environment:
+      REDIS_ADDR: redis:6379
+      KAFKA_BROKER: kafka:9093
+      KAFKA_TOPIC: tasks.created
+      KAFKA_GROUP_ID: task-worker-docker
+    depends_on:
+      - redis
+      - kafka
