@@ -12,6 +12,7 @@ import (
 	"google.golang.org/grpc/status"
 )
 
+// Service
 type Service struct {
 	taskv1.UnimplementedTaskServiceServer
 
@@ -19,6 +20,7 @@ type Service struct {
 	producer *kafkapub.Producer
 }
 
+// NewService
 func NewService(rdb *redis.Client, producer *kafkapub.Producer) *Service {
 	return &Service{
 		rdb:      rdb,
@@ -26,6 +28,7 @@ func NewService(rdb *redis.Client, producer *kafkapub.Producer) *Service {
 	}
 }
 
+// CreateTask
 func (s *Service) CreateTask(ctx context.Context, req *taskv1.CreateTaskRequest) (*taskv1.CreateTaskResponse, error) {
 	if req.GetTitle() == "" {
 		return nil, status.Error(codes.InvalidArgument, "title is required")
@@ -54,6 +57,7 @@ func (s *Service) CreateTask(ctx context.Context, req *taskv1.CreateTaskRequest)
 	}, nil
 }
 
+// GetTaskStatus
 func (s *Service) GetTaskStatus(ctx context.Context, req *taskv1.GetTaskStatusRequest) (*taskv1.GetTaskStatusResponse, error) {
 	if req.GetTaskId() == "" {
 		return nil, status.Error(codes.InvalidArgument, "task_id is required")
@@ -75,6 +79,7 @@ func (s *Service) GetTaskStatus(ctx context.Context, req *taskv1.GetTaskStatusRe
 	}, nil
 }
 
+// taskStatusKey
 func taskStatusKey(taskID string) string {
 	return fmt.Sprintf("task:%s:status", taskID)
 }
